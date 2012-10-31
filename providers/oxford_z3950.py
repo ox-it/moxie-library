@@ -69,6 +69,10 @@ class Z3950(object):
         self._charset = charset
         self._results_encoding = results_encoding
 
+    def handles(self, doc):
+        # TODO it has to change
+        return True
+
     def _make_connection(self):
         """
         Returns a connection to the Z39.50 server
@@ -227,7 +231,6 @@ class LibrarySearchResult(object):
 
     def simplify_for_render(self):
         return {
-            '_type': 'library.LibrarySearchResult',
             '_pk': self.id,
             'control_number': self.control_number,
             'title': self.title,
@@ -397,6 +400,7 @@ class OXMARCSearchResult(USMARCSearchResult):
         self.aleph_url = kwargs.pop('aleph_url')
         super(OXMARCSearchResult, self).__init__(*args, **kwargs)
         # Attach availability information to self.metadata
+        availability = False
         if availability:
             self.annotate_availability()
             for library in self.libraries:
@@ -410,12 +414,12 @@ class OXMARCSearchResult(USMARCSearchResult):
             shelfmark = shelfmark[:shelfmark.index('(copy')]
         return shelfmark.strip()
 
-    #@statsd.timer('library.availabilty.timing')
     def annotate_availability(self):
         """Interesting for loop here, uses the for else.
         We go through all books in the libraries data (should only be 1 book per lib)
         Try to match the shelfmark from Z39.50 with Aleph and adds the availability info
         """
+        return
         xml = urllib2.urlopen("%s?op=circ-status&library=BIB01&sys_no=%s" % (self.aleph_url, self.control_number))
         et = etree.parse(xml)
         items = et.xpath('/circ-status/item-data')
