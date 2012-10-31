@@ -2,7 +2,7 @@ import hashlib
 import json
 import logging
 
-from flask import request
+from flask import request, abort
 
 from moxie.core.views import ServiceView
 from moxie.core.kv import kv_store
@@ -22,18 +22,21 @@ class Search(ServiceView):
         author = request.args.get('author', None)
         isbn = request.args.get('isbn', None)
 
-        # TODO validation
+        # TODO shouldn't be as general as Exception, could be Bad Request if it's inconsistent query
+        # or Service Unavailable if the service is... not available...
+        try:
+            results = self.get_search_result(title, author, isbn)
+        except Exception as e:
+            abort(400, description=e.message)
+        else:
+            # 2. Do pagination
+            start = int(request.args.get('start', 0))
+            count = int(request.args.get('count', 10))
 
-        results = self.get_search_result(title, author, isbn)
-
-        # 2. Do pagination
-        start = int(request.args.get('start', 0))
-        count = int(request.args.get('count', 10))
-
-        context = { 'size': len(results),
-                    'results': results[start:(start+count)] }
-        # TODO add "link" to next page or so (HATEOAS-like navigation?)
-        return context
+            context = { 'size': len(results),
+                        'results': results[start:(start+count)] }
+            # TODO add "link" to next page or so (HATEOAS-like navigation?)
+            return context
 
     def get_search_result(self, title, author, isbn):
         """Check the cache or call the service to retrieve
@@ -68,4 +71,6 @@ def removeNonAscii(s):
 class ResourceDetail(ServiceView):
 
     def handle_request(self, id):
-        pass
+        service = LibrarySearchService.from_context()
+        result = service.get_media(id)
+        return result

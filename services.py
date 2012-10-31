@@ -1,6 +1,9 @@
+from flask import url_for
+
 from moxie.core.service import Service
 from moxie.library.providers.oxford_z3950 import LibrarySearchQuery
 from moxie.places.services import POIService
+from moxie.places.importers.helpers import simplify_doc_for_render
 
 
 class LibrarySearchService(Service):
@@ -22,5 +25,15 @@ class LibrarySearchService(Service):
             for location in result['holdings']:
                 poi = poi_service.get_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
                 if poi:
-                    result['holdings'][location].append(poi)
+                    result['holdings'][location]['poi'] = simplify_doc_for_render(poi)
+                    result['holdings'][location]['poi']['@self'] = url_for('places.poidetail', ident=poi['id'])
         return results
+
+    def get_media(self, control_number):
+        """Get a media by its control number
+        :param control_number: ID of the media
+        :return result or None
+        """
+        z = self.get_provider(None)
+        result = z.control_number_search(control_number)
+        return result

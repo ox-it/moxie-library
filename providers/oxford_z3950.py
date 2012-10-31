@@ -149,7 +149,7 @@ class Z3950(object):
         results = self.Results(connection.search(z3950_query), self._wrapper,
             self._results_encoding)
         if len(results) > 0:
-            return results[0]
+            return results[0].simplify_for_render()
         else:
             return None
 
@@ -233,8 +233,11 @@ class LibrarySearchResult(object):
     @type holdings: dict
     """
 
-    AVAIL_UNAVAILABLE, AVAIL_UNKNOWN, AVAIL_STACK, AVAIL_REFERENCE,\
-    AVAIL_AVAILABLE = range(5)
+    AVAIL_UNAVAILABLE = 0
+    AVAIL_UNKNOWN = 1
+    AVAIL_STACK = 2
+    AVAIL_REFERENCE = 3
+    AVAIL_AVAILABLE = 4
 
     def simplify_for_render(self):
         return {
@@ -269,7 +272,6 @@ class SearchResult(LibrarySearchResult):
         'Withdrawn': LibrarySearchResult.AVAIL_UNAVAILABLE,
         '': LibrarySearchResult.AVAIL_UNKNOWN,
         }
-
 
 
 class USMARCSearchResult(SearchResult):
@@ -316,31 +318,33 @@ class USMARCSearchResult(SearchResult):
             #self.metadata = marc_to_unicode(self.metadata)
             pass
 
-        self.libraries = defaultdict(list)
+        self.libraries = defaultdict(dict)
 
         for datum in self.metadata[self.USM_LOCATION]:
-            #library = Library(datum['b'] + datum.get('c', []))
             library_id = '/'.join(datum['b'] + datum.get('c', []))
 
-            # Availability
-            if not 'p' in datum:
-                # Unknown availability
-                availability = LibrarySearchResult.AVAIL_UNKNOWN
-                datum['y'] = ['Check web OPAC']
-                due_date = None
-            elif not 'y' in datum:
-                # Unknown availability
-                due_date = None
-                availability = LibrarySearchResult.AVAIL_UNKNOWN
-            elif datum['y'][0].startswith('DUE BACK: '):
-                # To be available in due date
-                due_date = datetime.strptime(datum['y'][0][10:], '%d/%m/%y')
-                availability = LibrarySearchResult.AVAIL_UNAVAILABLE
-            else:
-                # Unknown availability
-                due_date = None
-                availability = self.AVAILABILITIES.get(datum['y'][0],
-                    LibrarySearchResult.AVAIL_UNAVAILABLE)
+            # Do not use availability information from this provider
+            # TODO clean
+            if False:
+                # Availability
+                if not 'p' in datum:
+                    # Unknown availability
+                    availability = LibrarySearchResult.AVAIL_UNKNOWN
+                    datum['y'] = ['Check web OPAC']
+                    due_date = None
+                elif not 'y' in datum:
+                    # Unknown availability
+                    due_date = None
+                    availability = LibrarySearchResult.AVAIL_UNKNOWN
+                elif datum['y'][0].startswith('DUE BACK: '):
+                    # To be available in due date
+                    due_date = datetime.strptime(datum['y'][0][10:], '%d/%m/%y')
+                    availability = LibrarySearchResult.AVAIL_UNAVAILABLE
+                else:
+                    # Unknown availability
+                    due_date = None
+                    availability = self.AVAILABILITIES.get(datum['y'][0],
+                        LibrarySearchResult.AVAIL_UNAVAILABLE)
 
             # Shelfmarks
             if 'h' in datum:
@@ -354,10 +358,12 @@ class USMARCSearchResult(SearchResult):
 
             materials_specified = datum['3'][0] if '3' in datum else None
 
-            self.libraries[library_id].append({
-                'due': due_date,
-                'availability': availability,
-                'availability_display': datum['y'][0] if 'y' in datum else None,
+            self.libraries[library_id] = defaultdict(list)
+
+            self.libraries[library_id]['holdings'].append({
+                #'due': due_date,
+                #'availability': availability,
+                #'availability_display': datum['y'][0] if 'y' in datum else None,
                 'shelfmark': shelfmark,
                 'materials_specified': materials_specified,
                 })
@@ -454,11 +460,35 @@ class OXMARCSearchResult(USMARCSearchResult):
                             else:
                                 book['availability_display'] = avail
                             found.add(item)
-                            #statsd.incr('library.availability.matchSuccess')
                             break
                     else:  # Doesn't run if we break, only when we run out of items
                         logger.info("Couldn't find match for location - %s" % location)
-                        #statsd.incr('library.availability.matchFail')
+
+
+class OxAlephAvailability(object):
+
+    def __init__(self, aleph_url):
+        self.aleph_url = aleph_url
+
+    def get(self, control_number):
+        """Get availability information for one media
+        :param control_number: ID of the media
+        :return list of items
+        """
+        xml = urllib2.urlopen("%s?op=circ-status&library=BIB01&sys_no=%s" % (self.aleph_url, control_number))
+        et = etree.parse(xml)
+        items = et.xpath('/circ-status/item-data')
+        return items
+
+    @classmethod
+    def annotate_availability(self, media, availability):
+        """Annotate books search result with availability information.
+        :param media: list of media to be annotated
+        :param availability: availability information to be added to media
+        :return media annotated with availability information
+        """
+        pass
+
 
 
 class LibrarySearchQuery:
