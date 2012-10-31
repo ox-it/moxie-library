@@ -54,14 +54,8 @@ class Search(ServiceView):
         else:
             logger.debug("Search results from service")
             results = service.search(title, author, isbn)
-            r = []
-            for result in results:
-                try:
-                    r.append(result.simplify_for_render())
-                except:
-                    pass
-            kv_store.setex(self.CACHE_KEY_FORMAT.format(__name__, hash.hexdigest()), self.CACHE_EXPIRE, json.dumps(r))
-            return r
+            kv_store.setex(self.CACHE_KEY_FORMAT.format(__name__, hash.hexdigest()), self.CACHE_EXPIRE, json.dumps(results))
+            return results
 
 
 def removeNonAscii(s):

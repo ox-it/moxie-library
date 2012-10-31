@@ -2,6 +2,7 @@ import logging
 import datetime
 import urllib2
 from lxml import etree
+from collections import defaultdict
 
 from PyZ3950 import zoom
 
@@ -122,7 +123,13 @@ class Z3950(object):
             else:
                 raise LibrarySearchException(e.message)
         else:
-            return results
+            r = []
+            for result in results:
+                try:
+                    r.append(result.simplify_for_render())
+                except:
+                    pass
+            return r
 
     def control_number_search(self, control_number):
         """
@@ -231,7 +238,6 @@ class LibrarySearchResult(object):
 
     def simplify_for_render(self):
         return {
-            '_pk': self.id,
             'control_number': self.control_number,
             'title': self.title,
             'publisher': self.publisher,
@@ -239,10 +245,9 @@ class LibrarySearchResult(object):
             'description': self.description,
             'edition': self.edition,
             'copies': self.copies,
-            'holding_libraries': self.holding_libraries,
             'isbns': self.isbns,
             'issns': self.issns,
-            #'holdings': self.libraries,
+            'holdings': self.libraries,
             }
 
     def __unicode__(self):
@@ -308,12 +313,14 @@ class USMARCSearchResult(SearchResult):
             self.metadata[heading].append(m)
 
         if results_encoding == 'marc8':
-            self.metadata = marc_to_unicode(self.metadata)
+            #self.metadata = marc_to_unicode(self.metadata)
+            pass
 
-        self.libraries = {}
+        self.libraries = defaultdict(list)
 
         for datum in self.metadata[self.USM_LOCATION]:
-            library = Library(datum['b'] + datum.get('c', []))
+            #library = Library(datum['b'] + datum.get('c', []))
+            library_id = '/'.join(datum['b'] + datum.get('c', []))
 
             # Availability
             if not 'p' in datum:
@@ -347,19 +354,16 @@ class USMARCSearchResult(SearchResult):
 
             materials_specified = datum['3'][0] if '3' in datum else None
 
-            # TODO watch how this dict is working
-            if not library in self.libraries:
-                self.libraries[library] = []
-            self.libraries[library].append( {
+            self.libraries[library_id].append({
                 'due': due_date,
                 'availability': availability,
                 'availability_display': datum['y'][0] if 'y' in datum else None,
                 'shelfmark': shelfmark,
                 'materials_specified': materials_specified,
-                } )
+                })
 
-        for library in self.libraries:
-            library.availability = max(l['availability'] for l in self.libraries[library])
+        #for library in self.libraries:
+        #    self.libraries[library]['availability'] = max(l['availability'] for l in self.libraries[library])
 
     def _metadata_property(heading, sep=' '):
         def f(self):
@@ -390,6 +394,7 @@ class USMARCSearchResult(SearchResult):
             return [a['a'][0] for a in self.metadata[self.USM_ISSN]]
         else:
             return []
+
 
 class OXMARCSearchResult(USMARCSearchResult):
     """Largely does the same as USMARCSearchResults but if availability=True then queries
@@ -456,52 +461,6 @@ class OXMARCSearchResult(USMARCSearchResult):
                         #statsd.incr('library.availability.matchFail')
 
 
-class Library(object):
-    """
-    An object representing a library (used in holdings)
-
-    @ivar location: an identifier for this library
-    """
-
-    def __init__(self, location):
-        self.location = tuple(location)
-
-    def __unicode__(self):
-        return "/".join(self.location)
-    __repr__ = __unicode__
-
-    def __hash__(self):
-        return hash((type(self), self.location))
-
-    def __eq__(self, other):
-        return self.location == other.location
-
-    def get_entity(self):
-        """
-        Gets the entity for this library. This look up is done using the
-        identifier namespace defined in the config. Returns None if no
-        identifier can be found.
-        """
-        return None
-        if hasattr(app_by_local_name('library'), 'library_identifier'):
-            library_identifier = app_by_local_name('library').library_identifier
-            try:
-                return get_entity(library_identifier, '/'.join(self.location))
-            except (Http404, Entity.MultipleObjectsReturned):
-                return None
-        else:
-            return None
-
-    def simplify_for_render(self, simplify_value, simplify_model):
-        entity = self.get_entity()
-        return {
-            '_type': 'library.Library',
-            'location_code': simplify_value(self.location),
-            #'entity': simplify_value(entity),
-            #'display_name': entity.title if entity else "/".join(self.location),
-            }
-
-
 class LibrarySearchQuery:
     """
     An object which gets passed to library search providers containing a library
@@ -566,16 +525,13 @@ class LibrarySearchQuery:
         """
 
         if isbn and issn:
-            raise self.InconsistentQuery(
-                _("You cannot specify both an ISBN and an ISSN."))
+            raise self.InconsistentQuery("You cannot specify both an ISBN and an ISSN.")
 
         if (title or author) and (isbn or issn):
-            raise self.InconsistentQuery(
-                _("You cannot specify both an ISBN and a title or author."))
+            raise self.InconsistentQuery("You cannot specify both an ISBN and a title or author.")
 
         if not (title or author or isbn or issn):
-            raise self.InconsistentQuery(
-                _("You must supply some subset of title or author, and ISBN."))
+            raise self.InconsistentQuery("You must supply some subset of title or author, and ISBN.")
 
         self.removed = set()
 
