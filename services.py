@@ -31,6 +31,7 @@ class LibrarySearchService(Service):
         poi_service = POIService.from_context()
         results = z.library_search(q)
         for result in results:
+            result['_self'] = url_for('library.resourcedetail', id=result['control_number'])
             for location in result['holdings']:
                 # TODO place identifier has to be set in configuration
                 poi = poi_service.get_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
