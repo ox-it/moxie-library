@@ -35,6 +35,7 @@ class Search(ServiceView):
 
             context = { 'size': len(results),
                         'results': results[start:(start+count)] }
+            # TODO add links: first, prev, last in addition to next
             if len(results) > start+count:
                 context['links'] = { 'next': url_for('.search', title=title, author=author, isbn=isbn, start=start+count, count=count)}
             return context
