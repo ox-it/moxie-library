@@ -32,6 +32,7 @@ class LibrarySearchService(Service):
         results = z.library_search(q)
         for result in results:
             for location in result['holdings']:
+                # TODO place identifier has to be set in configuration
                 poi = poi_service.get_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
                 if poi:
                     result['holdings'][location]['poi'] = simplify_doc_for_render(poi)
