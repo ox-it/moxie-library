@@ -2,7 +2,7 @@ import hashlib
 import json
 import logging
 
-from flask import request, abort
+from flask import request, abort, url_for
 
 from moxie.core.views import ServiceView
 from moxie.core.kv import kv_store
@@ -35,7 +35,8 @@ class Search(ServiceView):
 
             context = { 'size': len(results),
                         'results': results[start:(start+count)] }
-            # TODO add "link" to next page or so (HATEOAS-like navigation?)
+            if len(results) > start+count:
+                context['links'] = { 'next': url_for('.search', title=title, author=author, isbn=isbn, start=start+count, count=count)}
             return context
 
     def get_search_result(self, title, author, isbn):
