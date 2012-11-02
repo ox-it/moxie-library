@@ -1,6 +1,9 @@
 import hashlib
 import logging
-import json
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 from flask import url_for
 
@@ -58,8 +61,8 @@ class LibrarySearchService(Service):
         for result in results[start:(start+count)]:
             result['links'] = { 'self': url_for('library.resourcedetail', id=result['control_number']) }
             for location in result['holdings']:
-                # TODO place identifier has to be set in configuration
-                poi = poi_service.get_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
+                # TODO place identifier has to be set in configuration (__init__)
+                poi = poi_service.search_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
                 if poi:
                     result['holdings'][location]['poi'] = simplify_doc_for_render(poi)
             page.append(result)
