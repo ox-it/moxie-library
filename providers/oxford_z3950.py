@@ -70,10 +70,6 @@ class Z3950(object):
         self._charset = charset
         self._results_encoding = results_encoding
 
-    def handles(self, doc):
-        # TODO it has to change
-        return True
-
     def _make_connection(self):
         """
         Returns a connection to the Z39.50 server
@@ -130,6 +126,8 @@ class Z3950(object):
                 except:
                     pass
             return r
+        finally:
+            connection.close()
 
     def control_number_search(self, control_number):
         """
