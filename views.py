@@ -1,20 +1,14 @@
-import hashlib
-import json
 import logging
 
 from flask import request, abort, url_for
 
 from moxie.core.views import ServiceView
-from moxie.core.kv import kv_store
 from moxie.library.services import LibrarySearchService
 
 logger = logging.getLogger(__name__)
 
 
 class Search(ServiceView):
-
-    CACHE_KEY_FORMAT = '{0}_library_{1}'
-    CACHE_EXPIRE = 120   # seconds for cache to expire
 
     def handle_request(self):
         # 1. Request from Service
