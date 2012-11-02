@@ -33,7 +33,7 @@ class Search(ServiceView):
             # TODO add links: prev, last in addition to next
             if size > start+count:
                 context['links']['next'] = url_for('.search', title=title, author=author, isbn=isbn, start=start+count, count=count)
-            if count > 0 and size > start+count:
+            if start > 0 and size > start+count:
                 context['links']['prev'] = url_for('.search', title=title, author=author, isbn=isbn, start=start-count, count=count)
             context['links']['last'] = url_for('.search', title=title, author=author, isbn=isbn, start=size-count, count=count)
             context['links']['first'] = url_for('.search', title=title, author=author, isbn=isbn, count=count)
