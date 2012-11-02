@@ -23,14 +23,8 @@ class LibrarySearchService(Service):
     CACHE_KEY_FORMAT = '{0}_library_search_{1}'
     CACHE_EXPIRE = 120   # seconds for cache to expire
 
-    def __init__(self, providers=None):
-        self.providers = providers or []
-
-    def get_provider(self):
-        """Get a provider for searching libraries
-        TODO this currently returns the first provider in the list
-        """
-        return self.providers[0]
+    def __init__(self, search_provider_config=None):
+        self.searcher = self._import_provider(search_provider_config.items()[0])
 
     def search(self, title, author, isbn, start=0, count=10, no_cache=False):
         """Search for media in the given provider.
@@ -49,9 +43,8 @@ class LibrarySearchService(Service):
         if cache and not no_cache:
             results = json.loads(cache)
         else:
-            provider = self.get_provider()
             query = LibrarySearchQuery(title, author, isbn)
-            results = provider.library_search(query)
+            results = self.searcher.library_search(query)
             kv_store.setex(self.CACHE_KEY_FORMAT.format(__name__, hash.hexdigest()), self.CACHE_EXPIRE, json.dumps(results))
 
         poi_service = POIService.from_context()
@@ -73,8 +66,7 @@ class LibrarySearchService(Service):
         :param control_number: ID of the media
         :return result or None
         """
-        z = self.get_provider()
-        result = z.control_number_search(control_number)
+        result = self.searcher.control_number_search(control_number)
         return result
 
 
