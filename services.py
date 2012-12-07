@@ -8,7 +8,6 @@ from moxie.core.service import Service
 from moxie.core.kv import kv_store
 from moxie.library.providers.oxford_z3950 import LibrarySearchQuery
 from moxie.places.services import POIService
-from moxie.places.importers.helpers import simplify_doc_for_render
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +53,7 @@ class LibrarySearchService(Service):
                 # TODO place identifier has to be set in configuration (__init__)
                 poi = poi_service.search_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
                 if poi:
-                    result['holdings'][location]['poi'] = simplify_doc_for_render(poi)
+                    result['holdings'][location]['poi'] = poi
             page.append(result)
         return len(results), page
 
