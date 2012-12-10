@@ -81,20 +81,6 @@ class LibrarySearchResult(object):
     AVAIL_REFERENCE = 3
     AVAIL_AVAILABLE = 4
 
-    def simplify_for_render(self):
-        return {
-            'control_number': self.control_number,
-            'title': self.title,
-            'publisher': self.publisher,
-            'author': self.author,
-            'description': self.description,
-            'edition': self.edition,
-            'copies': self.copies,
-            'isbns': self.isbns,
-            'issns': self.issns,
-            'holdings': self.libraries,
-            }
-
     def __unicode__(self):
         return self.title
 
