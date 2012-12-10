@@ -1,11 +1,12 @@
 import logging
 
-from flask import request, abort, url_for
+from flask import request, abort
 
-from moxie.core.views import ServiceView
+from moxie.core.views import ServiceView, accepts
+from moxie.core.representations import JSON, HAL_JSON
+from moxie_library.representations import JsonItemRepresentation, JsonItemsRepresentation, HalJsonItemsRepresentation
 from moxie_library.services import LibrarySearchService
-from moxie_library.providers.oxford_z3950 import LibrarySearchException
-from moxie_library.providers.oxford_z3950 import LibrarySearchQuery
+from moxie_library.domain import LibrarySearchQuery, LibrarySearchException
 
 logger = logging.getLogger(__name__)
 
@@ -17,29 +18,29 @@ class Search(ServiceView):
         title = request.args.get('title', None)
         author = request.args.get('author', None)
         isbn = request.args.get('isbn', None)
-        start = int(request.args.get('start', 0))
-        count = int(request.args.get('count', 10))
+        self.start = int(request.args.get('start', 0))
+        self.count = int(request.args.get('count', 10))
 
-        # TODO extract these exceptions from the provider
         try:
             service = LibrarySearchService.from_context()
-            size, results = service.search(title, author, isbn, start, count)
+            size, results = service.search(title, author, isbn, self.start, self.count)
         except LibrarySearchException as e:
             abort(500, description=e.msg)
         except LibrarySearchQuery.InconsistentQuery as e:
             abort(400, description=e.msg)
         else:
             # 2. Do pagination
-            context = { 'size': size,
-                        'results': results,
-                        'links': dict()}
-            if size > start+count:
-                context['links']['next'] = url_for('.search', title=title, author=author, isbn=isbn, start=start+count, count=count)
-            if start > 0 and size > start+count:
-                context['links']['prev'] = url_for('.search', title=title, author=author, isbn=isbn, start=start-count, count=count)
-            context['links']['last'] = url_for('.search', title=title, author=author, isbn=isbn, start=size-count, count=count)
-            context['links']['first'] = url_for('.search', title=title, author=author, isbn=isbn, count=count)
-            return context
+             return { 'size': size,
+                        'results': results}
+
+    @accepts(JSON)
+    def as_json(self, response):
+        return JsonItemsRepresentation("search", response['results']).as_json()
+
+    @accepts(HAL_JSON)
+    def as_hal_json(self, response):
+        return HalJsonItemsRepresentation('search', response['results'], self.start,
+            self.count, response['size'], request.url_rule.endpoint).as_json()
 
 
 class ResourceDetail(ServiceView):

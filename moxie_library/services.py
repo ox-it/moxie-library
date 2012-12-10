@@ -6,7 +6,7 @@ from flask import url_for
 
 from moxie.core.service import Service
 from moxie.core.kv import kv_store
-from moxie_library.providers.oxford_z3950 import LibrarySearchQuery
+from moxie_library.domain import LibrarySearchQuery
 from moxie.places.services import POIService
 
 logger = logging.getLogger(__name__)
@@ -41,19 +41,20 @@ class LibrarySearchService(Service):
         else:
             query = LibrarySearchQuery(title, author, isbn)
             results = self.searcher.library_search(query)
-            kv_store.setex(self.CACHE_KEY_FORMAT.format(__name__, hash.hexdigest()), self.CACHE_EXPIRE, json.dumps(results))
+            #kv_store.setex(self.CACHE_KEY_FORMAT.format(__name__, hash.hexdigest()), self.CACHE_EXPIRE, json.dumps(results))
 
         poi_service = POIService.from_context()
 
         page = list()
 
         for result in results[start:(start+count)]:
-            result['links'] = { 'self': url_for('library.resourcedetail', id=result['control_number']) }
-            for location in result['holdings']:
-                # TODO place identifier has to be set in configuration (__init__)
-                poi = poi_service.search_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
-                if poi:
-                    result['holdings'][location]['poi'] = poi
+            if False:
+                result['links'] = { 'self': url_for('library.resourcedetail', id=result['control_number']) }
+                for location in result['holdings']:
+                    # TODO place identifier has to be set in configuration (__init__)
+                    poi = poi_service.search_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
+                    if poi:
+                        result['holdings'][location]['poi'] = poi
             page.append(result)
         return len(results), page
 
