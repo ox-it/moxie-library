@@ -15,15 +15,16 @@ class Search(ServiceView):
 
     def handle_request(self):
         # 1. Request from Service
-        title = request.args.get('title', None)
-        author = request.args.get('author', None)
-        isbn = request.args.get('isbn', None)
+        self.title = request.args.get('title', None)
+        self.author = request.args.get('author', None)
+        self.isbn = request.args.get('isbn', None)
         self.start = int(request.args.get('start', 0))
         self.count = int(request.args.get('count', 10))
 
         try:
             service = LibrarySearchService.from_context()
-            size, results = service.search(title, author, isbn, self.start, self.count)
+            size, results = service.search(self.title, self.author, self.isbn,
+                self.start, self.count)
         except LibrarySearchException as e:
             abort(500, description=e.msg)
         except LibrarySearchQuery.InconsistentQuery as e:
@@ -35,12 +36,14 @@ class Search(ServiceView):
 
     @accepts(JSON)
     def as_json(self, response):
-        return JsonItemsRepresentation("search", response['results']).as_json()
+        return JsonItemsRepresentation(self.title, self.author, self.isbn,
+            response['results'], response['size']).as_json()
 
     @accepts(HAL_JSON)
     def as_hal_json(self, response):
-        return HalJsonItemsRepresentation('search', response['results'], self.start,
-            self.count, response['size'], request.url_rule.endpoint).as_json()
+        return HalJsonItemsRepresentation(self.title, self.author, self.isbn,
+            response['results'], self.start, self.count, response['size'],
+            request.url_rule.endpoint).as_json()
 
 
 class ResourceDetail(ServiceView):

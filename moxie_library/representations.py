@@ -45,12 +45,18 @@ class HalJsonItemRepresentation(JsonItemRepresentation):
 
 class JsonItemsRepresentation(object):
 
-    def __init__(self, search, results):
-        self.search = search
+    def __init__(self, title, author, isbn, results, size):
+        self.title = title
+        self.author = author
+        self.isbn = isbn
         self.results = results
+        self.size = size
 
     def as_dict(self, representation=JsonItemRepresentation):
-        return {'query': self.search,
+        return {'title': self.title,
+                'author': self.author,
+                'isbn': self.isbn,
+                'size': self.size,
                 'results': [representation(r).as_dict() for r in self.results]}
 
     def as_json(self):
@@ -59,24 +65,26 @@ class JsonItemsRepresentation(object):
 
 class HalJsonItemsRepresentation(JsonItemsRepresentation):
 
-    def __init__(self, search, results, start, count, size, endpoint):
-        super(HalJsonItemsRepresentation, self).__init__(search, results)
+    def __init__(self, title, author, isbn, results, start, count, size, endpoint):
+        super(HalJsonItemsRepresentation, self).__init__(title, author, isbn, results, size)
         self.start = start
         self.count = count
-        self.size = size
         self.endpoint = endpoint
 
     def as_dict(self):
         response = {
-            'query': self.search,
+            'title': self.title,
+            'author': self.author,
+            'isbn': self.isbn,
             'size': self.size,
         }
         items = [HalJsonItemRepresentation(r, 'library.resourcedetail').as_dict() for r in self.results]
         links = {'self': {
-                    'href': url_for(self.endpoint, q=self.search)
+                    'href': url_for(self.endpoint, title=self.title, author=self.author, isbn=self.isbn)
             }
         }
-        links.update(get_nav_links(self.endpoint, self.start, self.count, self.size, q=self.search))
+        links.update(get_nav_links(self.endpoint, self.start, self.count, self.size,
+            title=self.title, author=self.author, isbn=self.isbn))
         return HalJsonRepresentation(response, links, {'items': items}).as_dict()
 
     def as_json(self):
