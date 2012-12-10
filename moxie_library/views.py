@@ -4,7 +4,7 @@ from flask import request, abort
 
 from moxie.core.views import ServiceView, accepts
 from moxie.core.representations import JSON, HAL_JSON
-from moxie_library.representations import JsonItemRepresentation, JsonItemsRepresentation, HalJsonItemsRepresentation
+from moxie_library.representations import JsonItemRepresentation, JsonItemsRepresentation, HalJsonItemsRepresentation, HalJsonItemRepresentation
 from moxie_library.services import LibrarySearchService
 from moxie_library.domain import LibrarySearchQuery, LibrarySearchException
 
@@ -49,3 +49,11 @@ class ResourceDetail(ServiceView):
         service = LibrarySearchService.from_context()
         result = service.get_media(id)
         return result
+
+    @accepts(JSON)
+    def as_json(self, response):
+        return JsonItemRepresentation(response).as_json()
+
+    @accepts(HAL_JSON)
+    def as_hal_json(self, response):
+        return HalJsonItemRepresentation(response, request.url_rule.endpoint).as_json()

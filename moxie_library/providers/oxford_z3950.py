@@ -149,7 +149,7 @@ class Z3950(object):
         results = self.Results(connection.search(z3950_query), self._wrapper,
             self._results_encoding)
         if len(results) > 0:
-            return results[0].simplify_for_render()
+            return results[0]
         else:
             return None
 
