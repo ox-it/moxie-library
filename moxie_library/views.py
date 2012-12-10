@@ -3,9 +3,9 @@ import logging
 from flask import request, abort, url_for
 
 from moxie.core.views import ServiceView
-from moxie.library.services import LibrarySearchService
-from moxie.library.providers.oxford_z3950 import LibrarySearchException
-from moxie.library.providers.oxford_z3950 import LibrarySearchQuery
+from moxie_library.services import LibrarySearchService
+from moxie_library.providers.oxford_z3950 import LibrarySearchException
+from moxie_library.providers.oxford_z3950 import LibrarySearchQuery
 
 logger = logging.getLogger(__name__)
 

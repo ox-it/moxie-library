@@ -6,7 +6,7 @@ from flask import url_for
 
 from moxie.core.service import Service
 from moxie.core.kv import kv_store
-from moxie.library.providers.oxford_z3950 import LibrarySearchQuery
+from moxie_library.providers.oxford_z3950 import LibrarySearchQuery
 from moxie.places.services import POIService
 
 logger = logging.getLogger(__name__)
