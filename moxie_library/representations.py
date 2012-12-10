@@ -13,6 +13,12 @@ class JsonItemRepresentation(JsonRepresentation):
             'id': self.item.control_number,
             'title': self.item.title,
             'author': self.item.author,
+            'publisher': self.item.publisher,
+            'description': self.item.description,
+            'edition': self.item.edition,
+            'copies': self.item.copies,
+            'isbns': self.item.isbns,
+            'issns': self.item.issns,
         }
 
     def as_json(self):
