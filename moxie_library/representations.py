@@ -28,7 +28,7 @@ class HalJsonItemRepresentation(JsonItemRepresentation):
     def as_dict(self):
         base = super(HalJsonItemRepresentation, self).as_dict()
         links = { 'self': {
-                    'href': url_for(self.endpoint, id=self.item.id)
+                    'href': url_for(self.endpoint, id=self.item.control_number)
                 }
         }
         return HalJsonRepresentation(base, links).as_dict()
