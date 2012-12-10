@@ -1,6 +1,7 @@
 *.py[cod]
 
 .idea/
+PyZ3950_parsetab.py
 
 # C extensions
 *.so
