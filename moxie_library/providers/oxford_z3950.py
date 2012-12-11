@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from PyZ3950 import zoom
 
-from moxie_library.domain import LibrarySearchResult
+from moxie_library.domain import LibrarySearchResult, LibrarySearchException
 
 logger = logging.getLogger(__name__)
 
