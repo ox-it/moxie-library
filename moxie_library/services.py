@@ -43,20 +43,7 @@ class LibrarySearchService(Service):
             results = self.searcher.library_search(query)
             #kv_store.setex(self.CACHE_KEY_FORMAT.format(__name__, hash.hexdigest()), self.CACHE_EXPIRE, json.dumps(results))
 
-        poi_service = POIService.from_context()
-
-        page = list()
-
-        for result in results[start:(start+count)]:
-            if False:
-                result['links'] = { 'self': url_for('library.resourcedetail', id=result['control_number']) }
-                for location in result['holdings']:
-                    # TODO place identifier has to be set in configuration (__init__)
-                    poi = poi_service.search_place_by_identifier('olis-aleph:{0}'.format(location.replace('/', '\/')))
-                    if poi:
-                        result['holdings'][location]['poi'] = poi
-            page.append(result)
-        return len(results), page
+        return len(results), results[start:(start+count)]
 
     def get_media(self, control_number):
         """Get a media by its control number

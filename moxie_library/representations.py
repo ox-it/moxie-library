@@ -1,6 +1,9 @@
 from flask import url_for, jsonify
 
 from moxie.core.representations import JsonRepresentation, HalJsonRepresentation, get_nav_links
+from moxie.core.service import NoConfiguredService
+from moxie.places.services import POIService
+from moxie.places.representations import HalJsonPoiRepresentation
 
 
 class JsonItemRepresentation(JsonRepresentation):
@@ -27,9 +30,15 @@ class JsonItemRepresentation(JsonRepresentation):
 
 class HalJsonItemRepresentation(JsonItemRepresentation):
 
-    def __init__(self, item, endpoint):
+    def __init__(self, item, endpoint, place_identifier='olis-aleph'):
+        """HAL Json representation for an item
+        :param item: domain item to represent
+        :param endpoint: base endpoint (URL)
+        :param place_identifier: identifier when searching for places
+        """
         super(HalJsonItemRepresentation, self).__init__(item)
         self.endpoint = endpoint
+        self.place_identifier = place_identifier
 
     def as_dict(self):
         base = super(HalJsonItemRepresentation, self).as_dict()
@@ -37,7 +46,18 @@ class HalJsonItemRepresentation(JsonItemRepresentation):
                     'href': url_for(self.endpoint, id=self.item.control_number)
                 }
         }
-        return HalJsonRepresentation(base, links).as_dict()
+
+        try:
+            poi_service = POIService.from_context()
+        except NoConfiguredService:
+            pass
+        else:
+            for location in self.item.libraries:
+                poi = poi_service.search_place_by_identifier('{key}:{value}'
+                    .format(key=self.place_identifier, value=location.replace('/', '\/')))
+                if poi:
+                    location['poi'] = HalJsonPoiRepresentation(poi, 'places.poidetail').as_dict()
+        return HalJsonRepresentation(base, links, self.item.libraries).as_dict()
 
     def as_json(self):
         return jsonify(self.as_dict())
