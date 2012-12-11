@@ -10,5 +10,5 @@ def create_blueprint(blueprint_name):
     library_blueprint.add_url_rule('/search',
             view_func=Search.as_view('search'))
     library_blueprint.add_url_rule('/item:<path:id>',
-            view_func=ResourceDetail.as_view('resourcedetail'))
+            view_func=ResourceDetail.as_view('item'))
     return library_blueprint

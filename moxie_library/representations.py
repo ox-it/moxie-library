@@ -98,7 +98,7 @@ class HalJsonItemsRepresentation(JsonItemsRepresentation):
             'isbn': self.isbn,
             'size': self.size,
         }
-        items = [HalJsonItemRepresentation(r, 'library.resourcedetail').as_dict() for r in self.results]
+        items = [HalJsonItemRepresentation(r, 'library.item').as_dict() for r in self.results]
         links = {'self': {
                     'href': url_for(self.endpoint, title=self.title, author=self.author, isbn=self.isbn)
             }
