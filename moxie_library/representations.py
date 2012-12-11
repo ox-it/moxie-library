@@ -20,6 +20,7 @@ class JsonItemRepresentation(JsonRepresentation):
             'description': self.item.description,
             'edition': self.item.edition,
             'copies': self.item.copies,
+            'holdings': self.item.libraries,
             'isbns': self.item.isbns,
             'issns': self.item.issns,
         }
@@ -47,17 +48,20 @@ class HalJsonItemRepresentation(JsonItemRepresentation):
                 }
         }
 
+        embedded = None
+
         try:
             poi_service = POIService.from_context()
         except NoConfiguredService:
             pass
         else:
+            embedded = {}
             for location in self.item.libraries:
                 poi = poi_service.search_place_by_identifier('{key}:{value}'
                     .format(key=self.place_identifier, value=location.replace('/', '\/')))
                 if poi:
-                    location['poi'] = HalJsonPoiRepresentation(poi, 'places.poidetail').as_dict()
-        return HalJsonRepresentation(base, links, self.item.libraries).as_dict()
+                    embedded[location] = HalJsonPoiRepresentation(poi, 'places.poidetail').as_dict()
+        return HalJsonRepresentation(base, links, embedded).as_dict()
 
     def as_json(self):
         return jsonify(self.as_dict())
