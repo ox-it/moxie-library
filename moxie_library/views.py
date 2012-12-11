@@ -19,7 +19,7 @@ class Search(ServiceView):
         self.author = request.args.get('author', None)
         self.isbn = request.args.get('isbn', None)
         self.start = int(request.args.get('start', 0))
-        self.count = int(request.args.get('count', 10))
+        self.count = int(request.args.get('count', 35))
 
         try:
             service = LibrarySearchService.from_context()
