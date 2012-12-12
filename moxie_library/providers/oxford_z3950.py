@@ -1,6 +1,6 @@
 import logging
 import datetime
-import urllib2
+import requests
 from lxml import etree
 from collections import defaultdict
 
@@ -18,15 +18,18 @@ class Z3950(object):
         A thing that pretends to be a list for lazy parsing of search results
         """
 
-        def __init__(self, results, wrapper, results_encoding):
+        def __init__(self, results, wrapper, results_encoding, availability=False, aleph_url=""):
             self.results = results
             self._wrapper = wrapper
             self._results_encoding = results_encoding
+            self._availability = availability
+            self._aleph_url = aleph_url
 
         def __iter__(self):
             for result in self.results:
                 yield self._wrapper(result,
-                    results_encoding=self._results_encoding)
+                    results_encoding=self._results_encoding,
+                    availability=self._availability, aleph_url=self._aleph_url)
 
         def __len__(self):
             return len(self.results)
@@ -35,15 +38,15 @@ class Z3950(object):
             if isinstance(key, slice):
                 if key.step:
                     raise NotImplementedError("Stepping not supported")
-                return (self._wrapper(r, results_encoding=self._results_encoding)\
+                return (self._wrapper(r, results_encoding=self._results_encoding, availability=self._availability, aleph_url=self._aleph_url)\
                     for r in self.results.__getslice__(key.start, key.stop))
             else:
                 return self._wrapper(self.results[key],
-                    results_encoding=self._results_encoding)
+                    results_encoding=self._results_encoding, availability=self._availability, aleph_url=self._aleph_url)
 
     def __init__(self, host, database, port=210, syntax='USMARC',
                  charset='UTF-8', control_number_key='12',
-                 results_encoding='marc8'):
+                 results_encoding='marc8', aleph_url=''):
         """
         @param host: The hostname of the Z39.50 instance to connect to
         @type host: str
@@ -67,10 +70,11 @@ class Z3950(object):
         self._database = database
         self._port = port
         self._syntax = syntax
-        self._wrapper = USMARCSearchResult
+        self._wrapper = OXMARCSearchResult
         self._control_number_key = control_number_key
         self._charset = charset
         self._results_encoding = results_encoding
+        self._aleph_url = aleph_url
 
     def _make_connection(self):
         """
@@ -87,11 +91,13 @@ class Z3950(object):
 
         return connection
 
-    def library_search(self, query):
+    def library_search(self, query, availability=False):
         """
         Search the library with a search query
         :param query: The query to be performed
         :type query: :py:class:`LibrarySearchQuery`
+        :param availability: annotate with availability information
+        :type availability: boolean
         :return A list of results
         :rtype [LibrarySearchResult]
         """
@@ -113,7 +119,7 @@ class Z3950(object):
 
         try:
             results = self.Results(connection.search(z3950_query),
-                self._wrapper, self._results_encoding)
+                self._wrapper, self._results_encoding, availability=availability, aleph_url=self._aleph_url)
         except zoom.Bib1Err as e:
             # 31 = Resources exhausted - no results available
             if e.condition in (31,):
@@ -131,11 +137,13 @@ class Z3950(object):
         finally:
             connection.close()
 
-    def control_number_search(self, control_number):
+    def control_number_search(self, control_number, availability=True):
         """
         Search the library with a unique ID of a resource
         :param control_number: The unique ID of the item to be looked up
         :type control_number: str
+        :param availability: annotate with availability information
+        :type availability: boolean
         :return The item with this control ID, or None if none can be found
         :rtype LibrarySearchResult
         """
@@ -147,15 +155,11 @@ class Z3950(object):
             'CCL', '(1,%s)="%s"' % (self._control_number_key, control_number))
         connection = self._make_connection()
         results = self.Results(connection.search(z3950_query), self._wrapper,
-            self._results_encoding)
+            self._results_encoding, availability=availability, aleph_url=self._aleph_url)
         if len(results) > 0:
             return results[0]
         else:
             return None
-
-
-
-
 
 
 class SearchResult(LibrarySearchResult):
@@ -312,7 +316,6 @@ class OXMARCSearchResult(USMARCSearchResult):
         self.aleph_url = kwargs.pop('aleph_url')
         super(OXMARCSearchResult, self).__init__(*args, **kwargs)
         # Attach availability information to self.metadata
-        availability = False
         if availability:
             self.annotate_availability()
             for library in self.libraries:
@@ -331,9 +334,17 @@ class OXMARCSearchResult(USMARCSearchResult):
         We go through all books in the libraries data (should only be 1 book per lib)
         Try to match the shelfmark from Z39.50 with Aleph and adds the availability info
         """
-        return
-        xml = urllib2.urlopen("%s?op=circ-status&library=BIB01&sys_no=%s" % (self.aleph_url, self.control_number))
-        et = etree.parse(xml)
+        response = requests.get("{base}?op=circ-status&library=BIB01&sys_no={id}".format(base=self.aleph_url, id=self.control_number), timeout=2)
+        if not response.ok:
+            return {}
+        else:
+            try:
+                self.parse_availability(response.content)
+            except Exception as e:
+                pass
+
+    def parse_availability(self, xml):
+        et = etree.fromstring(xml, parser=etree.XMLParser(ns_clean=True, recover=True))
         items = et.xpath('/circ-status/item-data')
         found = set()
         for library, books in self.libraries.items():
@@ -364,28 +375,3 @@ class OXMARCSearchResult(USMARCSearchResult):
                             break
                     else:  # Doesn't run if we break, only when we run out of items
                         logger.info("Couldn't find match for location - %s" % location)
-
-
-class OxAlephAvailability(object):
-
-    def __init__(self, aleph_url):
-        self.aleph_url = aleph_url
-
-    def get(self, control_number):
-        """Get availability information for one media
-        :param control_number: ID of the media
-        :return list of items
-        """
-        xml = urllib2.urlopen("%s?op=circ-status&library=BIB01&sys_no=%s" % (self.aleph_url, control_number))
-        et = etree.parse(xml)
-        items = et.xpath('/circ-status/item-data')
-        return items
-
-    @classmethod
-    def annotate_availability(self, media, availability):
-        """Annotate books search result with availability information.
-        :param media: list of media to be annotated
-        :param availability: availability information to be added to media
-        :return media annotated with availability information
-        """
-        pass
