@@ -86,8 +86,7 @@ class LibrarySearchResult(object):
 
 
 class LibrarySearchQuery:
-    """
-    An object which gets passed to library search providers containing a library
+    """An object which gets passed to library search providers containing a library
     search query
     """
 
@@ -101,8 +100,7 @@ class LibrarySearchQuery:
 
     @staticmethod
     def _clean_isbn(isbn):
-        """
-        Tidy up ISBN input - limit to only allowed characters, replacing * with
+        """Tidy up ISBN input - limit to only allowed characters, replacing * with
         X
         """
 
@@ -116,11 +114,9 @@ class LibrarySearchQuery:
 
     @staticmethod
     def _clean_input(input):
-        """
-        Remove stop words from the input
-
-        @return: The cleaned string and a set of removed stop words
-        @rtype: str, frozenset
+        """Remove stop words from the input
+        :return The cleaned string and a set of removed stop words
+        :rtype: str, frozenset
         """
 
         # Cheap and nasty tokenisation
@@ -134,16 +130,16 @@ class LibrarySearchQuery:
         return ' '.join(cleaned), frozenset(removed)
 
     def __init__(self, title=None, author=None, isbn=None, issn=None):
-        """
-        @param title: The title of the book to search for
-        @type title: str or None
-        @param author: The author of the book to search for
-        @type author: str or None
-        @param isbn: an ISBN number to search for - can contain * in place of X.
-        @type isbn: str or None
-        @param issn: an ISSN number to search for - can contain * in place of X.
-        @type issn: str or None
-        @raise LibrarySearchQuery.InconsistentQuery: If the query parameters are
+        """Init a search query for library
+        :param title: The title of the book to search for
+        :type title: str or None
+        :param author: The author of the book to search for
+        :type author: str or None
+        :param isbn: an ISBN number to search for - can contain * in place of X.
+        :type isbn: str or None
+        :param issn: an ISSN number to search for - can contain * in place of X.
+        :type issn: str or None
+        :raise LibrarySearchQuery.InconsistentQuery: If the query parameters are
             inconsistent (e.g., isbn specified alongside title and author, or no
             queries present)
         """
@@ -180,6 +176,24 @@ class LibrarySearchQuery:
             self.issn = self._clean_isbn(issn)
         else:
             self.issn = None
+
+
+class Library(object):
+    """Represents a library
+    """
+
+    def __init__(self, location):
+        self.location = tuple(location)
+
+    def __unicode__(self):
+        return "/".join(self.location)
+    __repr__ = __unicode__
+
+    def __hash__(self):
+        return hash((type(self), self.location))
+
+    def __eq__(self, other):
+        return self.location == other.location
 
 
 class LibrarySearchException(Exception):
