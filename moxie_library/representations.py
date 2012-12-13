@@ -58,7 +58,7 @@ class HalJsonItemRepresentation(JsonItemRepresentation):
             embedded = {}
             for location in self.item.libraries:
                 poi = poi_service.search_place_by_identifier('{key}:{value}'
-                    .format(key=self.place_identifier, value=location.replace('/', '\/')))
+                    .format(key=self.place_identifier, value=location.replace('/', '-')))
                 if poi:
                     embedded[location] = HalJsonPoiRepresentation(poi, 'places.poidetail').as_dict()
         return HalJsonRepresentation(base, links, embedded).as_dict()
