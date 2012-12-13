@@ -334,14 +334,17 @@ class OXMARCSearchResult(USMARCSearchResult):
         We go through all books in the libraries data (should only be 1 book per lib)
         Try to match the shelfmark from Z39.50 with Aleph and adds the availability info
         """
-        response = requests.get("{base}?op=circ-status&library=BIB01&sys_no={id}".format(base=self.aleph_url, id=self.control_number), timeout=2)
-        if not response.ok:
-            return {}
-        else:
+        response = requests.get("{base}?op=circ-status&library=BIB01&sys_no={id}".format(base=self.aleph_url, id=self.control_number),
+                                    timeout=2)
+        if response.ok:
             try:
                 self.parse_availability(response.content)
             except Exception as e:
-                pass
+                logger.error('Unable to parse availability information', exc_info=True,
+                    extra={'data': {'control_number': self.control_number}})
+        else:
+            logger.warning("Couldn't reach {url}, HTTP {code}".format(url=self.aleph_url,
+                code=response.status_code), extra={'data': {'control_number': self.control_number}})
 
     def parse_availability(self, xml):
         et = etree.fromstring(xml, parser=etree.XMLParser(ns_clean=True, recover=True))
