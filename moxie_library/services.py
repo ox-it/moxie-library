@@ -30,6 +30,13 @@ class LibrarySearchService(Service):
         :param no_cache: do not use the (potentially) cached result
         :return list of results
         """
+
+        query = LibrarySearchQuery(title, author, isbn)
+        results = self.searcher.library_search(query, availability=availability)
+        return len(results), results[start:(start+count)]
+
+        # Caching shouldn't be handled at that level and background tasks should fetch the rest of results
+        # as well as availability information
         search_string = "{0}{1}{2}".format(removeNonAscii(title), removeNonAscii(author), removeNonAscii(isbn))
         hash = hashlib.md5()
         hash.update(search_string)
@@ -38,7 +45,7 @@ class LibrarySearchService(Service):
             results = json.loads(cache)
         else:
             query = LibrarySearchQuery(title, author, isbn)
-            results = self.searcher.library_search(query)
+            results = self.searcher.library_search(query, availability=availability)
             #kv_store.setex(self.CACHE_KEY_FORMAT.format(__name__, hash.hexdigest()), self.CACHE_EXPIRE, json.dumps(results))
 
         return len(results), results[start:(start+count)]
