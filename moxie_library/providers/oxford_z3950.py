@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from PyZ3950 import zoom
 
-from moxie_library.domain import LibrarySearchResult, LibrarySearchException
+from moxie_library.domain import LibrarySearchResult, LibrarySearchException, Library
 
 logger = logging.getLogger(__name__)
 
@@ -224,33 +224,10 @@ class USMARCSearchResult(SearchResult):
             #self.metadata = marc_to_unicode(self.metadata)
             pass
 
-        self.libraries = defaultdict(dict)
+        self.libraries = defaultdict(list)
 
         for datum in self.metadata[self.USM_LOCATION]:
-            library_id = '/'.join(datum['b'] + datum.get('c', []))
-
-            # Do not use availability information from this provider
-            # TODO clean
-            if False:
-                # Availability
-                if not 'p' in datum:
-                    # Unknown availability
-                    availability = LibrarySearchResult.AVAIL_UNKNOWN
-                    datum['y'] = ['Check web OPAC']
-                    due_date = None
-                elif not 'y' in datum:
-                    # Unknown availability
-                    due_date = None
-                    availability = LibrarySearchResult.AVAIL_UNKNOWN
-                elif datum['y'][0].startswith('DUE BACK: '):
-                    # To be available in due date
-                    due_date = datetime.strptime(datum['y'][0][10:], '%d/%m/%y')
-                    availability = LibrarySearchResult.AVAIL_UNAVAILABLE
-                else:
-                    # Unknown availability
-                    due_date = None
-                    availability = self.AVAILABILITIES.get(datum['y'][0],
-                        LibrarySearchResult.AVAIL_UNAVAILABLE)
+            library = Library(datum['b'] + datum.get('c', []))
 
             # Shelfmarks
             if 'h' in datum:
@@ -264,18 +241,12 @@ class USMARCSearchResult(SearchResult):
 
             materials_specified = datum['3'][0] if '3' in datum else None
 
-            self.libraries[library_id] = defaultdict(list)
-
-            self.libraries[library_id]['holdings'].append({
-                #'due': due_date,
-                #'availability': availability,
-                #'availability_display': datum['y'][0] if 'y' in datum else None,
+            if not library in self.libraries:
+                self.libraries[library] = []
+            self.libraries[library].append({
                 'shelfmark': shelfmark,
                 'materials_specified': materials_specified,
                 })
-
-        #for library in self.libraries:
-        #    self.libraries[library]['availability'] = max(l['availability'] for l in self.libraries[library])
 
     def _metadata_property(heading, sep=' '):
         def f(self):
@@ -319,8 +290,8 @@ class OXMARCSearchResult(USMARCSearchResult):
         # Attach availability information to self.metadata
         if availability:
             self.annotate_availability()
-            #for library in self.libraries:
-            #    library.availability = max(l['availability'] for l in self.libraries[library])
+            for library in self.libraries:
+                library.availability = max(l['availability'] for l in self.libraries[library])
 
     def sanitize_shelfmark(self, shelfmark):
         """Reverts changes made by USMARCSearchResult.__init__ to shelfmarks.
