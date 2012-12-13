@@ -1,6 +1,7 @@
 import logging
 import datetime
 import requests
+from requests import RequestException
 from lxml import etree
 from collections import defaultdict
 
@@ -318,8 +319,8 @@ class OXMARCSearchResult(USMARCSearchResult):
         # Attach availability information to self.metadata
         if availability:
             self.annotate_availability()
-            for library in self.libraries:
-                library.availability = max(l['availability'] for l in self.libraries[library])
+            #for library in self.libraries:
+            #    library.availability = max(l['availability'] for l in self.libraries[library])
 
     def sanitize_shelfmark(self, shelfmark):
         """Reverts changes made by USMARCSearchResult.__init__ to shelfmarks.
@@ -330,23 +331,27 @@ class OXMARCSearchResult(USMARCSearchResult):
         return shelfmark.strip()
 
     def annotate_availability(self):
-        """Interesting for loop here, uses the for else.
-        We go through all books in the libraries data (should only be 1 book per lib)
-        Try to match the shelfmark from Z39.50 with Aleph and adds the availability info
+        """Annotate search result with availability information from Aleph.
         """
-        response = requests.get("{base}?op=circ-status&library=BIB01&sys_no={id}".format(base=self.aleph_url, id=self.control_number),
-                                    timeout=2)
-        if response.ok:
+        try:
+            response = requests.get("{base}?op=circ-status&library=BIB01&sys_no={id}".format(base=self.aleph_url, id=self.control_number),
+                                    timeout=2, config={'danger_mode': True})
+        except RequestException as re:
+            logger.error("Couldn't reach {url}".format(url=self.aleph_url,),
+                exc_info=True, extra={'data': {'control_number': self.control_number}})
+        else:
             try:
                 self.parse_availability(response.content)
             except Exception as e:
                 logger.error('Unable to parse availability information', exc_info=True,
                     extra={'data': {'control_number': self.control_number}})
-        else:
-            logger.warning("Couldn't reach {url}, HTTP {code}".format(url=self.aleph_url,
-                code=response.status_code), extra={'data': {'control_number': self.control_number}})
 
     def parse_availability(self, xml):
+        """Interesting for loop here, uses the for else.
+        We go through all books in the libraries data (should only be 1 book per lib)
+        Try to match the shelfmark from Z39.50 with Aleph and adds the availability info
+        :param xml: string containing availability information as XML
+        """
         et = etree.fromstring(xml, parser=etree.XMLParser(ns_clean=True, recover=True))
         items = et.xpath('/circ-status/item-data')
         found = set()
