@@ -92,15 +92,18 @@ class Z3950(object):
 
         return connection
 
-    def library_search(self, query, availability=False):
+    def library_search(self, query, start, count, availability=False):
         """
         Search the library with a search query
         :param query: The query to be performed
         :type query: :py:class:`LibrarySearchQuery`
+        :param start: first result
+        :type start: int
+        :param count: size of results
+        :type count: int
         :param availability: annotate with availability information
         :type availability: boolean
-        :return A list of results
-        :rtype [LibrarySearchResult]
+        :return total size of results, set of results
         """
         connection = self._make_connection()
 
@@ -128,13 +131,7 @@ class Z3950(object):
             else:
                 raise LibrarySearchException(e.message)
         else:
-            r = []
-            for result in results:
-                try:
-                    r.append(result)
-                except:
-                    pass
-            return r
+            return len(results), results[start:(start+count)]
         finally:
             connection.close()
 

@@ -32,8 +32,8 @@ class LibrarySearchService(Service):
         """
 
         query = LibrarySearchQuery(title, author, isbn)
-        results = self.searcher.library_search(query, availability=availability)
-        return len(results), results[start:(start+count)]
+        size, results = self.searcher.library_search(query, start, count, availability=availability)
+        return size, results
 
         # Caching shouldn't be handled at that level and background tasks should fetch the rest of results
         # as well as availability information
