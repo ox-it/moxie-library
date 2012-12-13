@@ -2,12 +2,9 @@ import hashlib
 import logging
 import json
 
-from flask import url_for
-
 from moxie.core.service import Service
 from moxie.core.kv import kv_store
 from moxie_library.domain import LibrarySearchQuery
-from moxie.places.services import POIService
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +19,12 @@ class LibrarySearchService(Service):
     def __init__(self, search_provider_config=None):
         self.searcher = self._import_provider(search_provider_config.items()[0])
 
-    def search(self, title, author, isbn, start=0, count=10, no_cache=False):
+    def search(self, title, author, isbn, availability, start=0, count=10, no_cache=False):
         """Search for media in the given provider.
         :param title: title
         :param author: author
         :param isbn: isbn
+        :param availability: annotate result with availability information
         :param start: first result to return
         :param count: number of results to return
         :param no_cache: do not use the (potentially) cached result
@@ -45,12 +43,13 @@ class LibrarySearchService(Service):
 
         return len(results), results[start:(start+count)]
 
-    def get_media(self, control_number):
+    def get_media(self, control_number, availability):
         """Get a media by its control number
         :param control_number: ID of the media
+        :param availability: annotate item with availability information
         :return result or None
         """
-        result = self.searcher.control_number_search(control_number)
+        result = self.searcher.control_number_search(control_number, availability=availability)
         return result
 
 

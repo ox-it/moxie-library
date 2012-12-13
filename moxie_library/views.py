@@ -18,13 +18,14 @@ class Search(ServiceView):
         self.title = request.args.get('title', None)
         self.author = request.args.get('author', None)
         self.isbn = request.args.get('isbn', None)
+        self.availability = get_boolean_value(request.args.get('availability', 'false'))
         self.start = int(request.args.get('start', 0))
         self.count = int(request.args.get('count', 35))
 
         try:
             service = LibrarySearchService.from_context()
             size, results = service.search(self.title, self.author, self.isbn,
-                self.start, self.count)
+                self.availability, self.start, self.count)
         except LibrarySearchException as e:
             abort(500, description=e.msg)
         except LibrarySearchQuery.InconsistentQuery as e:
@@ -50,7 +51,8 @@ class ResourceDetail(ServiceView):
 
     def handle_request(self, id):
         service = LibrarySearchService.from_context()
-        result = service.get_media(id)
+        availability = get_boolean_value(request.args.get('availability', 'true'))
+        result = service.get_media(id, availability)
         return result
 
     @accepts(JSON)
@@ -60,3 +62,12 @@ class ResourceDetail(ServiceView):
     @accepts(HAL_JSON)
     def as_hal_json(self, response):
         return HalJsonItemRepresentation(response, request.url_rule.endpoint).as_json()
+
+
+def get_boolean_value(s, default=False):
+    s = s.lower()
+    if s == 'true':
+        return True
+    elif s == 'false':
+        return False
+    return default
