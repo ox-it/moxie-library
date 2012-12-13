@@ -6,12 +6,25 @@ from moxie.places.services import POIService
 from moxie.places.representations import HalJsonPoiRepresentation
 
 
+class JsonLibrariesRepresentation(JsonRepresentation):
+
+    def __init__(self, library):
+        self.library = library
+
+    def as_dict(self):
+        out = {}
+        for k, v in self.library.items():
+            out['/'.join(k.location)] = v
+        return out
+
+
 class JsonItemRepresentation(JsonRepresentation):
 
     def __init__(self, item):
         self.item = item
 
     def as_dict(self):
+        libraries = JsonLibrariesRepresentation(self.item.libraries)
         return {
             'id': self.item.control_number,
             'title': self.item.title,
@@ -20,7 +33,7 @@ class JsonItemRepresentation(JsonRepresentation):
             'description': self.item.description,
             'edition': self.item.edition,
             'copies': self.item.copies,
-            'holdings': self.item.libraries,
+            'holdings': libraries.as_dict(),
             'isbns': self.item.isbns,
             'issns': self.item.issns,
         }
@@ -60,7 +73,7 @@ class HalJsonItemRepresentation(JsonItemRepresentation):
                 poi = poi_service.search_place_by_identifier('{key}:{value}'
                     .format(key=self.place_identifier, value='-'.join(location.location)))
                 if poi:
-                    embedded[location] = HalJsonPoiRepresentation(poi, 'places.poidetail').as_dict()
+                    embedded['/'.join(location.location)] = HalJsonPoiRepresentation(poi, 'places.poidetail').as_dict()
         return HalJsonRepresentation(base, links, embedded).as_dict()
 
     def as_json(self):
