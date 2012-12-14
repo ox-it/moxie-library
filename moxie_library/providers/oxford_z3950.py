@@ -287,8 +287,13 @@ class OXMARCSearchResult(USMARCSearchResult):
         # Attach availability information to self.metadata
         if availability:
             self.annotate_availability()
-            for library in self.libraries:
-                library.availability = max(l['availability'] for l in self.libraries[library])
+            try:
+                for library in self.libraries:
+                    library.availability = max(l['availability'] for l in self.libraries[library])
+            except KeyError as ke:
+                # Key might not be present if annotation didn't work
+                # TODO key should always be there but with a default (appropriate) value?
+                pass
 
     def sanitize_shelfmark(self, shelfmark):
         """Reverts changes made by USMARCSearchResult.__init__ to shelfmarks.
