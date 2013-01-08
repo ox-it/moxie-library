@@ -1,12 +1,11 @@
 from flask import url_for, jsonify
 
-from moxie.core.representations import JsonRepresentation, HalJsonRepresentation, get_nav_links
-from moxie.core.service import NoConfiguredService
+from moxie.core.representations import Representation, HALRepresentation, get_nav_links
 from moxie.places.services import POIService
-from moxie.places.representations import HalJsonPoiRepresentation
+from moxie.places.representations import HALPOIRepresentation
 
 
-class JsonLibrariesRepresentation(JsonRepresentation):
+class LibrariesRepresentation(Representation):
 
     def __init__(self, library):
         self.library = library
@@ -18,13 +17,13 @@ class JsonLibrariesRepresentation(JsonRepresentation):
         return out
 
 
-class JsonItemRepresentation(JsonRepresentation):
+class ItemRepresentation(Representation):
 
     def __init__(self, item):
         self.item = item
 
     def as_dict(self):
-        libraries = JsonLibrariesRepresentation(self.item.libraries)
+        libraries = LibrariesRepresentation(self.item.libraries)
         return {
             'id': self.item.control_number,
             'title': self.item.title,
@@ -42,20 +41,20 @@ class JsonItemRepresentation(JsonRepresentation):
         return jsonify(self.as_dict())
 
 
-class HalJsonItemRepresentation(JsonItemRepresentation):
+class HALItemRepresentation(ItemRepresentation):
 
     def __init__(self, item, endpoint, place_identifier='olis-aleph'):
-        """HAL Json representation for an item
+        """HAL  representation for an item
         :param item: domain item to represent
         :param endpoint: base endpoint (URL)
         :param place_identifier: identifier when searching for places
         """
-        super(HalJsonItemRepresentation, self).__init__(item)
+        super(HALItemRepresentation, self).__init__(item)
         self.endpoint = endpoint
         self.place_identifier = place_identifier
 
     def as_dict(self):
-        base = super(HalJsonItemRepresentation, self).as_dict()
+        base = super(HALItemRepresentation, self).as_dict()
         links = { 'self': {
                     'href': url_for(self.endpoint, id=self.item.control_number)
                 }
@@ -73,14 +72,14 @@ class HalJsonItemRepresentation(JsonItemRepresentation):
                 poi = poi_service.search_place_by_identifier('{key}:{value}'
                     .format(key=self.place_identifier, value='-'.join(location.location)))
                 if poi:
-                    embedded['/'.join(location.location)] = HalJsonPoiRepresentation(poi, 'places.poidetail').as_dict()
-        return HalJsonRepresentation(base, links, embedded).as_dict()
+                    embedded['/'.join(location.location)] = HALPOIRepresentation(poi, 'places.poidetail').as_dict()
+        return HALRepresentation(base, links, embedded).as_dict()
 
     def as_json(self):
         return jsonify(self.as_dict())
 
 
-class JsonItemsRepresentation(object):
+class ItemsRepresentation(object):
 
     def __init__(self, title, author, isbn, results, size):
         self.title = title
@@ -89,7 +88,7 @@ class JsonItemsRepresentation(object):
         self.results = results
         self.size = size
 
-    def as_dict(self, representation=JsonItemRepresentation):
+    def as_dict(self, representation=ItemRepresentation):
         return {'title': self.title,
                 'author': self.author,
                 'isbn': self.isbn,
@@ -100,10 +99,10 @@ class JsonItemsRepresentation(object):
         return jsonify(self.as_dict())
 
 
-class HalJsonItemsRepresentation(JsonItemsRepresentation):
+class HALItemsRepresentation(ItemsRepresentation):
 
     def __init__(self, title, author, isbn, results, start, count, size, endpoint):
-        super(HalJsonItemsRepresentation, self).__init__(title, author, isbn, results, size)
+        super(HALItemsRepresentation, self).__init__(title, author, isbn, results, size)
         self.start = start
         self.count = count
         self.endpoint = endpoint
@@ -115,14 +114,14 @@ class HalJsonItemsRepresentation(JsonItemsRepresentation):
             'isbn': self.isbn,
             'size': self.size,
         }
-        items = [HalJsonItemRepresentation(r, 'library.item').as_dict() for r in self.results]
+        items = [HALItemRepresentation(r, 'library.item').as_dict() for r in self.results]
         links = {'self': {
                     'href': url_for(self.endpoint, title=self.title, author=self.author, isbn=self.isbn)
             }
         }
         links.update(get_nav_links(self.endpoint, self.start, self.count, self.size,
             title=self.title, author=self.author, isbn=self.isbn))
-        return HalJsonRepresentation(response, links, {'items': items}).as_dict()
+        return HALRepresentation(response, links, {'items': items}).as_dict()
 
     def as_json(self):
         return jsonify(self.as_dict())

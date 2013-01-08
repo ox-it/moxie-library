@@ -4,9 +4,8 @@ from flask import request, abort
 
 from moxie.core.views import ServiceView, accepts
 from moxie.core.representations import JSON, HAL_JSON
-from moxie_library.representations import JsonItemRepresentation, JsonItemsRepresentation, HalJsonItemsRepresentation, HalJsonItemRepresentation
+from moxie_library.representations import ItemRepresentation, ItemsRepresentation, HALItemsRepresentation, HALItemRepresentation
 from moxie_library.services import LibrarySearchService
-from moxie_library.domain import LibrarySearchQuery, LibrarySearchException
 
 logger = logging.getLogger(__name__)
 
@@ -37,12 +36,12 @@ class Search(ServiceView):
 
     @accepts(JSON)
     def as_json(self, response):
-        return JsonItemsRepresentation(self.title, self.author, self.isbn,
+        return ItemsRepresentation(self.title, self.author, self.isbn,
             response['results'], response['size']).as_json()
 
     @accepts(HAL_JSON)
     def as_hal_json(self, response):
-        return HalJsonItemsRepresentation(self.title, self.author, self.isbn,
+        return HALItemsRepresentation(self.title, self.author, self.isbn,
             response['results'], self.start, self.count, response['size'],
             request.url_rule.endpoint).as_json()
 
@@ -57,11 +56,11 @@ class ResourceDetail(ServiceView):
 
     @accepts(JSON)
     def as_json(self, response):
-        return JsonItemRepresentation(response).as_json()
+        return ItemRepresentation(response).as_json()
 
     @accepts(HAL_JSON)
     def as_hal_json(self, response):
-        return HalJsonItemRepresentation(response, request.url_rule.endpoint).as_json()
+        return HALItemRepresentation(response, request.url_rule.endpoint).as_json()
 
 
 def get_boolean_value(s, default=False):
