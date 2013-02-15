@@ -33,8 +33,7 @@ class Search(ServiceView):
         except LibrarySearchQuery.InconsistentQuery as e:
             abort(400, description=e.msg)
         else:
-             return { 'size': size,
-                        'results': results}
+            return {'size': size, 'results': results}
 
     @accepts(JSON)
     def as_json(self, response):

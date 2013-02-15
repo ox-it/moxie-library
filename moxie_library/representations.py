@@ -56,9 +56,9 @@ class HALItemRepresentation(ItemRepresentation):
 
     def as_dict(self):
         base = super(HALItemRepresentation, self).as_dict()
-        links = { 'self': {
-                    'href': url_for(self.endpoint, id=self.item.control_number)
-                }
+        links = {'self': {
+            'href': url_for(self.endpoint, id=self.item.control_number)
+        }
         }
 
         embedded = None
@@ -117,11 +117,11 @@ class HALItemsRepresentation(ItemsRepresentation):
         }
         items = [HALItemRepresentation(r, 'library.item').as_dict() for r in self.results]
         links = {'self': {
-                    'href': url_for(self.endpoint, title=self.title, author=self.author, isbn=self.isbn)
-            }
+            'href': url_for(self.endpoint, title=self.title, author=self.author, isbn=self.isbn)
+        }
         }
         links.update(get_nav_links(self.endpoint, self.start, self.count, self.size,
-            title=self.title, author=self.author, isbn=self.isbn))
+                                   title=self.title, author=self.author, isbn=self.isbn))
         return HALRepresentation(response, links, {'items': items}).as_dict()
 
     def as_json(self):

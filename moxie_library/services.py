@@ -45,6 +45,6 @@ class LibrarySearchService(Service):
 
 def removeNonAscii(s):
     if s:
-        return "".join(i for i in s if ord(i)<128)
+        return "".join(i for i in s if ord(i) < 128)
     else:
         return ""
