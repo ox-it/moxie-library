@@ -155,8 +155,12 @@ class Z3950(object):
         z3950_query = zoom.Query(
             'CCL', '(1,%s)="%s"' % (self._control_number_key, control_number))
         connection = self._make_connection()
-        results = self.Results(connection.search(z3950_query), self._wrapper,
-            self._results_encoding, availability=availability, aleph_url=self._aleph_url)
+        try:
+            results = self.Results(connection.search(z3950_query), self._wrapper,
+                self._results_encoding, availability=availability, aleph_url=self._aleph_url)
+        except zoom.ConnectionError as e:
+            # TODO better handling of exceptions with the new feature from moxie.core.exceptions
+            raise LibrarySearchException(e.message)
         if len(results) > 0:
             return results[0]
         else:

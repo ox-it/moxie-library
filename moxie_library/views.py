@@ -3,7 +3,9 @@ import logging
 from flask import request, abort
 
 from moxie.core.views import ServiceView, accepts
+from moxie.core.cache import cache
 from moxie.core.representations import JSON, HAL_JSON
+from moxie_library.domain import LibrarySearchException, LibrarySearchQuery
 from moxie_library.representations import ItemRepresentation, ItemsRepresentation, HALItemsRepresentation, HALItemRepresentation
 from moxie_library.services import LibrarySearchService
 
@@ -12,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Search(ServiceView):
 
+    @cache.cached(timeout=60)
     def handle_request(self):
         # 1. Request from Service
         self.title = request.args.get('title', None)
@@ -24,30 +27,30 @@ class Search(ServiceView):
         try:
             service = LibrarySearchService.from_context()
             size, results = service.search(self.title, self.author, self.isbn,
-                self.availability, self.start, self.count)
+                                           self.availability, self.start, self.count)
         except LibrarySearchException as e:
             abort(500, description=e.msg)
         except LibrarySearchQuery.InconsistentQuery as e:
             abort(400, description=e.msg)
         else:
-            # 2. Do pagination
              return { 'size': size,
                         'results': results}
 
     @accepts(JSON)
     def as_json(self, response):
         return ItemsRepresentation(self.title, self.author, self.isbn,
-            response['results'], response['size']).as_json()
+                                   response['results'], response['size']).as_json()
 
     @accepts(HAL_JSON)
     def as_hal_json(self, response):
         return HALItemsRepresentation(self.title, self.author, self.isbn,
-            response['results'], self.start, self.count, response['size'],
-            request.url_rule.endpoint).as_json()
+                                      response['results'], self.start, self.count, response['size'],
+                                      request.url_rule.endpoint).as_json()
 
 
 class ResourceDetail(ServiceView):
 
+    @cache.cached(timeout=60)
     def handle_request(self, id):
         service = LibrarySearchService.from_context()
         availability = get_boolean_value(request.args.get('availability', 'true'))
