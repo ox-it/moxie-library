@@ -130,6 +130,9 @@ class Z3950(object):
                 return []
             else:
                 raise LibrarySearchException(e.message)
+        except zoom.ConnectionError as e:
+            # TODO better handling of exceptions with the new feature from moxie.core.exceptions
+            raise LibrarySearchException(e.message)
         else:
             return len(results), results[start:(start+count)]
         finally:
