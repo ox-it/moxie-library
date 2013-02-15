@@ -1,5 +1,6 @@
 from flask import url_for, jsonify
 
+from moxie.core.service import NoConfiguredService
 from moxie.core.representations import Representation, HALRepresentation, get_nav_links
 from moxie.places.services import POIService
 from moxie.places.representations import HALPOIRepresentation
