@@ -28,8 +28,6 @@ class Search(ServiceView):
             service = LibrarySearchService.from_context()
             size, results = service.search(self.title, self.author, self.isbn,
                                            self.availability, self.start, self.count)
-        except LibrarySearchException as e:
-            abort(500, description=e.msg)
         except LibrarySearchQuery.InconsistentQuery as e:
             abort(400, description=e.msg)
         else:

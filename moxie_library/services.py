@@ -25,10 +25,7 @@ class LibrarySearchService(Service):
         """
 
         query = LibrarySearchQuery(title, author, isbn)
-        try:
-            size, results = self.searcher.library_search(query, start, count, availability=availability)
-        except LibrarySearchException as lse:
-            raise lse   # TODO raise application exception
+        size, results = self.searcher.library_search(query, start, count, availability=availability)
         return size, results
 
     def get_media(self, control_number, availability):
@@ -37,10 +34,8 @@ class LibrarySearchService(Service):
         :param availability: annotate item with availability information
         :return result or None
         """
-        try:
-            return self.searcher.control_number_search(control_number, availability=availability)
-        except LibrarySearchException as lse:
-            raise lse   # TODO raise application exception
+        # TODO raise NotFound if the control number doesn't exist
+        return self.searcher.control_number_search(control_number, availability=availability)
 
 
 def removeNonAscii(s):

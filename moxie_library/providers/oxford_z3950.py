@@ -7,6 +7,7 @@ from collections import defaultdict
 
 from PyZ3950 import zoom
 
+from moxie.core.exceptions import ServiceUnavailable
 from moxie_library.domain import LibrarySearchResult, LibrarySearchException, Library
 
 logger = logging.getLogger(__name__)
@@ -131,8 +132,8 @@ class Z3950(object):
             else:
                 raise LibrarySearchException(e.message)
         except zoom.ZoomError as e:
-            # TODO better handling of exceptions with the new feature from moxie.core.exceptions
-            raise LibrarySearchException(e.message)
+            logger.warning("Z3950 provider exception", exc_info=True)
+            raise ServiceUnavailable()
         else:
             return len(results), results[start:(start+count)]
         finally:
@@ -159,8 +160,8 @@ class Z3950(object):
             results = self.Results(connection.search(z3950_query), self._wrapper,
                 self._results_encoding, availability=availability, aleph_url=self._aleph_url)
         except zoom.ZoomError as e:
-            # TODO better handling of exceptions with the new feature from moxie.core.exceptions
-            raise LibrarySearchException(e.message)
+            logger.warning("Z3950 provider exception", exc_info=True)
+            raise ServiceUnavailable()
         if len(results) > 0:
             return results[0]
         else:
