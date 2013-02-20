@@ -28,20 +28,23 @@ class Search(ServiceView):
             service = LibrarySearchService.from_context()
             size, results = service.search(self.title, self.author, self.isbn,
                                            self.availability, self.start, self.count)
+            results = list(results)     # necessary for caching (cannot pickle with generators)
         except LibrarySearchQuery.InconsistentQuery as e:
             abort(400, description=e.msg)
         else:
-            return {'size': size, 'results': results}
+            return {'size': size, 'results': results, 'title': self.title,
+                    'author': self.author, 'isbn': self.isbn,
+                    'start': self.start, 'count': self.count}
 
     @accepts(JSON)
     def as_json(self, response):
-        return ItemsRepresentation(self.title, self.author, self.isbn,
+        return ItemsRepresentation(response['title'], response['author'], response['isbn'],
                                    response['results'], response['size']).as_json()
 
     @accepts(HAL_JSON)
     def as_hal_json(self, response):
-        return HALItemsRepresentation(self.title, self.author, self.isbn,
-                                      response['results'], self.start, self.count, response['size'],
+        return HALItemsRepresentation(response['title'], response['author'], response['isbn'],
+                                      response['results'], response['start'], response['count'], response['size'],
                                       request.url_rule.endpoint).as_json()
 
 
