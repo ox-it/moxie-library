@@ -73,7 +73,8 @@ class HALItemRepresentation(ItemRepresentation):
                 poi = poi_service.search_place_by_identifier('{key}:{value}'
                     .format(key=self.place_identifier, value='-'.join(location.location)))
                 if poi:
-                    embedded['/'.join(location.location)] = HALPOIRepresentation(poi, 'places.poidetail').as_dict()
+                    embedded['/'.join(location.location)] = HALPOIRepresentation(poi, 'places.poidetail',
+                                                                                 add_parent_children_links=False).as_dict()
         return HALRepresentation(base, links, embedded).as_dict()
 
     def as_json(self):
