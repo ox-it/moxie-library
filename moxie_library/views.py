@@ -62,6 +62,8 @@ class ResourceDetail(ServiceView):
         service = LibrarySearchService.from_context()
         availability = get_boolean_value(request.args.get('availability', 'true'))
         result = service.get_media(id, availability)
+        if not result:
+            abort(404)
         return result
 
     @accepts(JSON)

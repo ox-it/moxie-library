@@ -34,7 +34,6 @@ class LibrarySearchService(Service):
         :param availability: annotate item with availability information
         :return result or None
         """
-        # TODO raise NotFound if the control number doesn't exist
         return self.searcher.control_number_search(control_number, availability=availability)
 
 
