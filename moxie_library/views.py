@@ -6,7 +6,7 @@ from moxie.core.views import ServiceView, accepts
 from moxie.core.cache import cache
 from moxie.core.representations import JSON, HAL_JSON
 from moxie_library.domain import LibrarySearchException, LibrarySearchQuery
-from moxie_library.representations import ItemRepresentation, ItemsRepresentation, HALItemsRepresentation, HALItemRepresentation
+from moxie_library.representations import HALItemsRepresentation, HALItemRepresentation
 from moxie_library.services import LibrarySearchService
 
 logger = logging.getLogger(__name__)
@@ -43,12 +43,7 @@ class Search(ServiceView):
                     'author': self.author, 'isbn': self.isbn,
                     'start': self.start, 'count': self.count}
 
-    @accepts(JSON)
-    def as_json(self, response):
-        return ItemsRepresentation(response['title'], response['author'], response['isbn'],
-                                   response['results'], response['size']).as_json()
-
-    @accepts(HAL_JSON)
+    @accepts(HAL_JSON, JSON)
     def as_hal_json(self, response):
         return HALItemsRepresentation(response['title'], response['author'], response['isbn'],
                                       response['results'], response['start'], response['count'], response['size'],
@@ -66,11 +61,7 @@ class ResourceDetail(ServiceView):
             abort(404)
         return result
 
-    @accepts(JSON)
-    def as_json(self, response):
-        return ItemRepresentation(response).as_json()
-
-    @accepts(HAL_JSON)
+    @accepts(HAL_JSON, JSON)
     def as_hal_json(self, response):
         return HALItemRepresentation(response, request.url_rule.endpoint).as_json()
 
