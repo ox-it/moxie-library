@@ -110,7 +110,6 @@ class Z3950(object):
         :type availability: boolean
         :return total size of results, set of results
         """
-        connection = self._make_connection()
 
         # Convert Query object into a Z39.50 query - we escape for the query by
         # removing quotation marks
@@ -127,6 +126,7 @@ class Z3950(object):
         z3950_query = zoom.Query('CCL', 'and'.join(z3950_query))
 
         try:
+            connection = self._make_connection()
             results = self.Results(connection.search(z3950_query),
                 self._wrapper, self._results_encoding, availability=availability, aleph_url=self._aleph_url)
         except zoom.Bib1Err as e:
@@ -146,7 +146,10 @@ class Z3950(object):
         else:
             return len(results), results[start:(start+count)]
         finally:
-            connection.close()
+            try:
+                connection.close()
+            except:
+                pass
 
     def control_number_search(self, control_number, availability=True):
         """
@@ -164,17 +167,24 @@ class Z3950(object):
 
         z3950_query = zoom.Query(
             'CCL', '(1,%s)="%s"' % (self._control_number_key, control_number))
-        connection = self._make_connection()
+
         try:
+            connection = self._make_connection()
             results = self.Results(connection.search(z3950_query), self._wrapper,
                 self._results_encoding, availability=availability, aleph_url=self._aleph_url)
         except zoom.ZoomError as e:
             logger.warning("Z3950 provider exception", exc_info=True)
             raise ServiceUnavailable()
-        if len(results) > 0:
-            return results[0]
         else:
-            return None
+            if len(results) > 0:
+                return results[0]
+            else:
+                return None
+        finally:
+            try:
+                connection.close()
+            except:
+                pass
 
 
 class SearchResult(LibrarySearchResult):
