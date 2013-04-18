@@ -1,5 +1,7 @@
 import logging
 import datetime
+import socket
+from PyZ3950.z3950 import Z3950Error
 import requests
 from requests import RequestException
 from lxml import etree
@@ -9,6 +11,8 @@ from PyZ3950 import zoom
 
 from moxie.core.exceptions import ServiceUnavailable
 from moxie_library.domain import LibrarySearchResult, LibrarySearchException, Library
+
+socket.setdefaulttimeout(4)
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +137,11 @@ class Z3950(object):
                 raise LibrarySearchException(e.message)
         except zoom.ZoomError as e:
             logger.warning("Z3950 provider exception", exc_info=True)
+            raise ServiceUnavailable()
+        except Z3950Error:
+            # If connection error (timeout...), throws ConnectionError(Z3950Error)
+            # see https://github.com/ox-it/PyZ3950/blob/master/PyZ3950/z3950.py#L89
+            logger.warning("Z3950 connection exception", exc_info=True)
             raise ServiceUnavailable()
         else:
             return len(results), results[start:(start+count)]
