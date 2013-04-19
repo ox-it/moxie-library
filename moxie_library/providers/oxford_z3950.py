@@ -2,11 +2,11 @@ import logging
 import datetime
 import socket
 from contextlib import contextmanager
+from collections import defaultdict
+
 import requests
 from requests import RequestException
 from lxml import etree
-from collections import defaultdict
-
 from PyZ3950 import zoom
 
 from moxie.core.exceptions import ServiceUnavailable
