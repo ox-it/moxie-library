@@ -1,7 +1,7 @@
 import logging
 import datetime
 import socket
-from PyZ3950.z3950 import Z3950Error
+from contextlib import contextmanager
 import requests
 from requests import RequestException
 from lxml import etree
@@ -12,9 +12,24 @@ from PyZ3950 import zoom
 from moxie.core.exceptions import ServiceUnavailable
 from moxie_library.domain import LibrarySearchResult, LibrarySearchException, Library
 
-socket.setdefaulttimeout(4)
+SOCKET_TIMEOUT = 4
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def handle_connection(seconds):
+    """Set timeout
+    """
+    original = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(seconds)
+    try:
+        yield
+    except:
+        logger.warning("Z3950 connection error", exc_info=True)
+        raise ServiceUnavailable()
+    finally:
+        socket.setdefaulttimeout(original)
 
 
 class Z3950(object):
@@ -126,9 +141,10 @@ class Z3950(object):
         z3950_query = zoom.Query('CCL', 'and'.join(z3950_query))
 
         try:
-            connection = self._make_connection()
-            results = self.Results(connection.search(z3950_query),
-                self._wrapper, self._results_encoding, availability=availability, aleph_url=self._aleph_url)
+            with handle_connection(SOCKET_TIMEOUT):
+                connection = self._make_connection()
+                results = self.Results(connection.search(z3950_query),
+                    self._wrapper, self._results_encoding, availability=availability, aleph_url=self._aleph_url)
         except zoom.Bib1Err as e:
             # 31 = Resources exhausted - no results available
             if e.condition in (31,):
@@ -137,11 +153,6 @@ class Z3950(object):
                 raise LibrarySearchException(e.message)
         except zoom.ZoomError as e:
             logger.warning("Z3950 provider exception", exc_info=True)
-            raise ServiceUnavailable()
-        except Z3950Error:
-            # If connection error (timeout...), throws ConnectionError(Z3950Error)
-            # see https://github.com/ox-it/PyZ3950/blob/master/PyZ3950/z3950.py#L89
-            logger.warning("Z3950 connection exception", exc_info=True)
             raise ServiceUnavailable()
         else:
             return len(results), results[start:(start+count)]
@@ -169,9 +180,10 @@ class Z3950(object):
             'CCL', '(1,%s)="%s"' % (self._control_number_key, control_number))
 
         try:
-            connection = self._make_connection()
-            results = self.Results(connection.search(z3950_query), self._wrapper,
-                self._results_encoding, availability=availability, aleph_url=self._aleph_url)
+            with handle_connection(SOCKET_TIMEOUT):
+                connection = self._make_connection()
+                results = self.Results(connection.search(z3950_query), self._wrapper,
+                    self._results_encoding, availability=availability, aleph_url=self._aleph_url)
         except zoom.ZoomError as e:
             logger.warning("Z3950 provider exception", exc_info=True)
             raise ServiceUnavailable()
