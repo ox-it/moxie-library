@@ -3,7 +3,7 @@ import logging
 from flask import request, abort
 
 from moxie.core.views import ServiceView, accepts
-from moxie.core.cache import cache
+from moxie.core.cache import cache, args_cache_key
 from moxie.core.representations import JSON, HAL_JSON
 from moxie_library.domain import LibrarySearchException, LibrarySearchQuery
 from moxie_library.representations import HALItemsRepresentation, HALItemRepresentation
@@ -12,16 +12,9 @@ from moxie_library.services import LibrarySearchService
 logger = logging.getLogger(__name__)
 
 
-def make_cache_key(*args, **kwargs):
-    """Create a string from the path of the request + arguments
-    """
-    args = str(hash(frozenset(request.args.items())))
-    return (request.path + args).encode('utf-8')
-
-
 class Search(ServiceView):
 
-    @cache.cached(timeout=60, key_prefix=make_cache_key)
+    @cache.cached(timeout=60, key_prefix=args_cache_key)
     def handle_request(self):
         # 1. Request from Service
         self.title = request.args.get('title', None)
