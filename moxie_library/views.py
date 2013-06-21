@@ -1,9 +1,10 @@
 import logging
 
-from flask import request, abort
+from flask import request
 
 from moxie.core.views import ServiceView, accepts
 from moxie.core.cache import cache, args_cache_key
+from moxie.core.exceptions import BadRequest, NotFound
 from moxie.core.representations import JSON, HAL_JSON
 from moxie_library.domain import LibrarySearchException, LibrarySearchQuery
 from moxie_library.representations import HALItemsRepresentation, HALItemRepresentation
@@ -30,7 +31,7 @@ class Search(ServiceView):
                                            self.availability, self.start, self.count)
             results = list(results)     # necessary for caching (cannot pickle with generators)
         except LibrarySearchQuery.InconsistentQuery as e:
-            abort(400, description=e.msg)
+            raise BadRequest(message=e.msg)
         else:
             return {'size': size, 'results': results, 'title': self.title,
                     'author': self.author, 'isbn': self.isbn,
@@ -51,7 +52,7 @@ class ResourceDetail(ServiceView):
         availability = get_boolean_value(request.args.get('availability', 'true'))
         result = service.get_media(id, availability)
         if not result:
-            abort(404)
+            raise NotFound()
         return result
 
     @accepts(HAL_JSON, JSON)
