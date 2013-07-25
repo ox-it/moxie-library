@@ -347,16 +347,17 @@ class OXMARCSearchResult(USMARCSearchResult):
         """
         try:
             response = requests.get("{base}?op=circ-status&library=BIB01&sys_no={id}".format(base=self.aleph_url, id=self.control_number),
-                                    timeout=2, config={'danger_mode': True})
+                                    timeout=2)
+            response.raise_for_status()
         except RequestException as re:
             logger.error("Couldn't reach {url}".format(url=self.aleph_url,),
-                exc_info=True, extra={'data': {'control_number': self.control_number}})
+                         exc_info=True, extra={'data': {'control_number': self.control_number}})
         else:
             try:
                 self.parse_availability(response.content)
             except Exception as e:
                 logger.error('Unable to parse availability information', exc_info=True,
-                    extra={'data': {'control_number': self.control_number}})
+                             extra={'data': {'control_number': self.control_number}})
 
     def parse_availability(self, xml):
         """Interesting for loop here, uses the for else.
