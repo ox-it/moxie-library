@@ -81,6 +81,15 @@ class LibrarySearchResult(object):
     AVAIL_REFERENCE = 3
     AVAIL_AVAILABLE = 4
 
+    # strings to represents general
+    GENERIC_AVAILABILITIES = {
+        AVAIL_UNAVAILABLE: 'unavailable',
+        AVAIL_UNKNOWN: 'unknown',
+        AVAIL_STACK: 'stack',
+        AVAIL_REFERENCE: 'reference',
+        AVAIL_AVAILABLE: 'available',
+    }
+
     def __unicode__(self):
         return self.title
 

@@ -31,7 +31,9 @@ Endpoint to search and retrieve information about media in libraries. Follows sp
               "holdings": [
                 {
                   "materials_specified": null,
-                  "shelfmark": "C21:50 Arreau (1)"
+                  "shelfmark": "C21:50 Arreau (1)",
+                  "availability": "available",
+                  "availability_display": "Available",
                 }
               ]
             }
@@ -43,6 +45,10 @@ Endpoint to search and retrieve information about media in libraries. Follows sp
           "title": "Arreau. [map]",
           "issns": []
         }
+
+    Each library holding the book **might** have the properties ``availability`` and ``availability_display``.
+    The property ``availability`` is readable by computers and is one of: 'unavailable', 'unknown', 'stack', 'reference', 'available'.
+    The property ``availability_display`` is readable by humans and the text may vary depending on the provider used.
 
     :param id: ID of the resource
     :type id: string

@@ -382,16 +382,16 @@ class OXMARCSearchResult(USMARCSearchResult):
                                 due_date = datetime.strptime(avail, '%d/%m/%y')
                                 book['due'] = due_date
                                 avail = "Due back: %s" % avail
-                                availability = LibrarySearchResult.AVAIL_UNAVAILABLE
+                                availability = LibrarySearchResult.GENERIC_AVAILABILITIES.get(LibrarySearchResult.AVAIL_UNAVAILABLE)
                             except:
-                                availability = self.AVAILABILITIES.get(avail,
-                                    LibrarySearchResult.AVAIL_UNAVAILABLE)
-                            book['availability'] = availability
+                                availability = LibrarySearchResult.GENERIC_AVAILABILITIES.get(self.AVAILABILITIES.get(avail),
+                                                                                              self.AVAILABILITIES.get(LibrarySearchResult.AVAIL_UNAVAILABLE))
                             if avail[-1] == '*':
                                 book['availability_display'] = "Closed Stack / Request via SOLO"
-                                book['availability'] = LibrarySearchResult.AVAIL_STACK
+                                book['availability'] = LibrarySearchResult.GENERIC_AVAILABILITIES.get(LibrarySearchResult.AVAIL_STACK)
                             else:
                                 book['availability_display'] = avail
+                                book['availability'] = availability
                             found.add(item)
                             break
                     else:  # Doesn't run if we break, only when we run out of items
